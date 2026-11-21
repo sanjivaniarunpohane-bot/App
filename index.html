@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10172c">
+<meta name="description" content="WORLD BOOK - Your global digital library">
+<title>WORLD BOOK | Global Digital Library</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f5f6ff;font-family:Arial,sans-serif}
+header{padding:25px 16px;background:linear-gradient(120deg,#182d59,#10172c);text-align:center}
+header h1{margin:0;font-size:32px;letter-spacing:2px}
+header p{color:#b9c9e9}
+main{max-width:1100px;margin:auto;padding:16px}
+.search{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}
+input,select,button{padding:13px;border-radius:10px;border:1px solid #344363;background:#18243e;color:white;font-size:15px}
+input{flex:1;min-width:180px}
+button{cursor:pointer;background:#315ed5;border:0}
+button:hover{filter:brightness(1.12)}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:20px}
+.filters select{flex:1;min-width:140px}
+h2{font-size:20px}
+#results{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px}
+.book{background:#17233c;border:1px solid #283957;border-radius:13px;padding:12px;min-width:0}
+.book img{width:100%;height:190px;object-fit:contain;background:#10172c;border-radius:7px}
+.book h3{font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+.book p{font-size:12px;color:#b9c9e9}
+.book button{width:100%;margin-top:7px}
+.small{font-size:12px;color:#a9b7d0}
+.panel{background:#17233c;border-radius:13px;padding:16px;margin:20px 0}
+#saved{display:flex;flex-wrap:wrap;gap:8px}
+.saved-item{background:#263c61;padding:9px;border-radius:8px;display:flex;gap:8px;align-items:center}
+#message{color:#9fbaff;margin:12px 0;min-height:20px}
+a{color:#9fc4ff}
+.modal{display:none;position:fixed;inset:0;background:#000c;overflow:auto;padding:20px;z-index:5}
+.modal-content{max-width:650px;margin:30px auto;background:#18243e;padding:22px;border-radius:15px}
+.close{float:right;background:#8c3547}
+.action-link{display:block;margin:12px 0;padding:12px;background:#315ed5;border-radius:8px;color:white;text-decoration:none}
+footer{text-align:center;color:#9aa9c5;padding:25px}
+@media(max-width:480px){header h1{font-size:26px}.modal-content{margin:8px auto}}
+</style>
+</head>
+<body>
+<header>
+<h1>🌍 WORLD BOOK</h1>
+<p>A WORLD OF KNOWLEDGE IN YOUR HANDS</p>
+<div class="small">Created by Nirmit Arun Pohane</div>
+</header>
+<main>
+<div class="search">
+<input id="query" placeholder="Search books, authors, subjects..." aria-label="Search books">
+<button id="searchBtn">SEARCH</button>
+</div>
+<div class="filters">
+<select id="category" aria-label="Category">
+<option value="">All Categories</option>
+<option>Science</option><option>History</option><option>Geography</option>
+<option>Mathematics</option><option>Biology</option><option>Encyclopedia</option>
+<option>Computer Science</option><option>Engineering</option><option>Medicine</option>
+<option>Literature</option><option>Career Development</option>
+</select>
+<select id="level" aria-label="Education level">
+<option value="">All Education Levels</option>
+<option>Nursery</option><option>Kindergarten</option>
+<option>Class 1</option><option>Class 2</option><option>Class 3</option>
+<option>Class 4</option><option>Class 5</option><option>Class 6</option>
+<option>Class 7</option><option>Class 8</option><option>Class 9</option>
+<option>Class 10</option><option>Class 11</option><option>Class 12</option>
+<option>Competitive Exams</option><option>Professional Courses</option>
+</select>
+<select id="language" aria-label="Book language">
+<option value="">All Languages</option>
+<option value="en">English</option><option value="hi">Hindi</option>
+<option value="mr">Marathi</option><option value="sa">Sanskrit</option>
+<option value="gu">Gujarati</option><option value="bn">Bengali</option>
+<option value="ta">Tamil</option><option value="te">Telugu</option>
+<option value="kn">Kannada</option><option value="ml">Malayalam</option>
+</select>
+</div>
+<div id="message" role="status">Search for a title, author, subject or education level.</div>
+<h2>📚 Explore Books</h2>
+<div id="results"></div>
+<section class="panel">
+<h2>⭐ My Library</h2>
+<p class="small">Saved book records are stored in this browser on this device.</p>
+<div id="saved"></div>
+</section>
+<section class="panel">
+<h2>🌐 About WORLD BOOK</h2>
+<p>Explore books, encyclopedias, literature, science, technology, history and career knowledge.</p>
+<p class="small">Only download or read full books when the publisher or provider makes them legally available. Some listings provide previews or book details only.</p>
+</section>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Book details">
+<div class="modal-content">
+<button class="close" id="closeBtn">CLOSE</button>
+<div id="details"></div>
+</div>
+</div>
+<footer>WORLD BOOK © 2026<br>Created by Nirmit Arun Pohane</footer>
+<script>
+const $ = id => document.getElementById(id);
+let currentBooks = [];
+
+function getSaved(){
+  try { return JSON.parse(localStorage.getItem("worldBooks") || "[]"); }
+  catch { return []; }
+}
+function saveBook(book){
+  const list = getSaved();
+  if(!list.some(b => b.id === book.id)){
+    list.push({id:book.id,title:book.title,authors:book.authors,web:book.web});
+    localStorage.setItem("worldBooks", JSON.stringify(list));
+  }
+  showSaved();
+  $("message").textContent = "Book saved to My Library on this device.";
+}
+function showSaved(){
+  const box = $("saved");
+  box.replaceChildren();
+  getSaved().forEach(book => {
+    const item = document.createElement("div");
+    item.className = "saved-item";
+    const name = document.createElement("span");
+    name.textContent = book.title;
+    item.appendChild(name);
+    if(book.web){
+      const link = document.createElement("a");
+      link.href = book.web; link.target = "_blank"; link.rel = "noopener noreferrer";
+      link.textContent = "Details"; item.appendChild(link);
+    }
+    box.appendChild(item);
+  });
+  if(!box.children.length) box.textContent = "No saved books yet.";
+}
+async function searchBooks(){
+  const q = $("query").value.trim();
+  const category = $("category").value;
+  const level = $("level").value;
+  const lang = $("language").value;
+  const term = [q,category,level].filter(Boolean).join(" ");
+  if(!term){ $("message").textContent = "Enter a search term or choose a category."; return; }
+  $("results").replaceChildren();
+  $("message").textContent = "Searching Google Books...";
+  try{
+    const params = new URLSearchParams({q:term,maxResults:"30",printType:"books"});
+    if(lang) params.set("langRestrict",lang);
+    const response = await fetch("https://www.googleapis.com/books/v1/volumes?"+params);
+    if(!response.ok) throw new Error("Search service unavailable");
+    const data = await response.json();
+    currentBooks = (data.items || []).map(item => {
+      const v = item.volumeInfo || {};
+      const a = item.accessInfo || {};
+      return {
+        id:"google-"+item.id, title:v.title || "Untitled",
+        authors:v.authors || ["Author not listed"],
+        publisher:v.publisher || "Not listed",
+        year:v.publishedDate || "Not listed",
+        description:v.description || "No description provided by the catalogue.",
+        image:v.imageLinks?.thumbnail || "",
+        preview:v.previewLink || "",
+        web:v.infoLink || "",
+        pdf:a.pdf?.downloadLink || "",
+        epub:a.epub?.downloadLink || ""
+      };
+    });
+    displayBooks();
+    $("message").textContent = currentBooks.length ?
+      currentBooks.length+" results found. Availability depends on the publisher." :
+      "No results found. Try a different search.";
+  }catch(err){
+    $("message").textContent = "Could not reach the book catalogue. Check your internet connection and try again.";
+  }
+}
+function displayBooks(){
+  const box = $("results"); box.replaceChildren();
+  currentBooks.forEach((book,index) => {
+    const card = document.createElement("article"); card.className = "book";
+    if(book.image){
+      const img = document.createElement("img"); img.src = book.image;
+      img.alt = "Cover of "+book.title; img.loading = "lazy";
+      card.appendChild(img);
+    }
+    const title = document.createElement("h3"); title.textContent = book.title;
+    const author = document.createElement("p"); author.textContent = book.authors.join(", ");
+    const detail = document.createElement("button"); detail.textContent = "VIEW BOOK";
+    detail.onclick = () => openBook(index);
+    const save = document.createElement("button"); save.textContent = "☆ SAVE TO MY LIBRARY";
+    save.onclick = () => saveBook(book);
+    card.append(title,author,detail,save); box.appendChild(card);
+  });
+}
+function addLink(container,label,url){
+  if(!url) return;
+  const a = document.createElement("a"); a.className = "action-link";
+  a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+  a.textContent = label; container.appendChild(a);
+}
+function openBook(index){
+  const b = currentBooks[index], area = $("details"); area.replaceChildren();
+  const title = document.createElement("h2"); title.textContent = b.title;
+  const info = document.createElement("p");
+  info.textContent = "Author: "+b.authors.join(", ")+" | Publisher: "+b.publisher+" | Published: "+b.year;
+  const desc = document.createElement("p"); desc.textContent = b.description;
+  area.append(title,info,desc);
+  addLink(area,"📖 OPEN AVAILABLE PREVIEW",b.preview);
+  addLink(area,"📥 DOWNLOAD PDF (IF PROVIDER ALLOWS)",b.pdf);
+  addLink(area,"📥 DOWNLOAD EPUB (IF PROVIDER ALLOWS)",b.epub);
+  addLink(area,"ℹ️ OFFICIAL BOOK DETAILS",b.web);
+  if(!b.preview && !b.pdf && !b.epub){
+    const note = document.createElement("p");
+    note.textContent = "No online preview or download link is provided for this listing.";
+    area.appendChild(note);
+  }
+  $("modal").style.display = "block";
+}
+function closeModal(){ $("modal").style.display = "none"; }
+$("searchBtn").addEventListener("click",searchBooks);
+$("query").addEventListener("keydown",e=>{if(e.key==="Enter")searchBooks();});
+$("closeBtn").addEventListener("click",closeModal);
+$("modal").addEventListener("click",e=>{if(e.target === $("modal"))closeModal();});
+showSaved();
+</script>
+</body>
+</html>
